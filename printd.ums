@@ -1,0 +1,31 @@
+# r6 and r7 are temp registers, clobbered by this function
+# r5 is volatile register, holds return address temporarily
+# r2 always holds stack pointer
+#
+# when function is called, r1 holds return address,
+# r1 will hold return value when program ends
+
+.section text
+printd:
+        push r1 on stack r2     # save return address
+        r6 := m[r0][r2 + 1]
+        if (r6 <s 0) goto print_sign  # check negetivity first
+        goto print_least
+
+finish:
+        pop r5 off r2           # get r1 return address back then exit
+        goto r5
+
+
+print_least:
+        r7 := r6 mod 10
+        r6 := r6 / 10
+        output r7 + 48          # add offset to match ascii 0-9
+        if (r6 == 0) goto finish
+        goto print_least
+
+print_sign:
+        output '-'
+        r6 := - r6
+        goto print_least
+
