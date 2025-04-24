@@ -1,0 +1,7 @@
+# make r6, r7 temporary registers, then call main
+# halt program after main is done 
+
+.section init
+        .temps r6, r7
+        goto main linking r1
+        halt
