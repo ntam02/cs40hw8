@@ -7,3 +7,4 @@
     r2 := endstack
     .section data
     .space 10000
+endstack:
