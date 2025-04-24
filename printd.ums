@@ -8,11 +8,13 @@
 .section text
 printd:
         push r1 on stack r2     # save return address
-        r6 := m[r0][r2 + 1]
-        if (r6 <s 0) goto print_sign  # check negetivity first
+        r6 := m[r0][r2 + 1]     # assume parameter is pushed to stack by caller
+        output ">>> "
+        if (r6 <s 0) goto print_sign    # check negetivity first
         goto print_least
 
 finish:
+        output '\n'
         pop r5 off r2           # get r1 return address back then exit
         goto r5
 
