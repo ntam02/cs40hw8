@@ -6,9 +6,7 @@
     .section init 
 _ustart: 
     r0 := 0 
-    r2 := endstack 
-    goto main linking r1 
-    halt  
+    r2 := endstack
     .section text //optional
     .section data
     .space 10000 
