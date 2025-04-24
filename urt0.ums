@@ -1,0 +1,15 @@
+# urt0.ums
+# declares zero and temp registers
+# creates space of 10,000 um words for stack
+    .zero r0 
+    .temps r6, r7 
+    .section init 
+_ustart: 
+    r0 := 0 
+    r2 := endstack 
+    goto main linking r1 
+    halt  
+    .section text //optional
+    .section data
+    .space 10000 
+endstack:
