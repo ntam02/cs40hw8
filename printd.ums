@@ -1,33 +1,39 @@
+## printd.ums
 # r6 and r7 are temp registers, clobbered by this function
 # r5 is volatile register, holds return address temporarily
 # r2 always holds stack pointer
 #
 # when function is called, r1 holds return address,
 # r1 will hold return value when program ends
-
-.section text
+        .temps r6, r7
+        .section text
 printd:
         push r1 on stack r2     # save return address
-        r6 := m[r0][r2 + 1]     # assume parameter is pushed to stack by caller
+        push r3 on stack r2
+        push r4 on stack r2
+        r3 := m[r0][r2 + 3]     # assume parameter is pushed to stack by caller
         output ">>> "
-        if (r6 <s 0) goto print_sign    # check negetivity first
+        if (r3 <s 0) goto print_sign using r1   # check negetivity first
         goto print_least
 
 finish:
         output '\n'
-        pop r5 off r2           # get r1 return address back then exit
+        pop r4 off stack r2
+        pop r3 off stack r2
+        pop r5 off stack r2           # get r1 return address back then exit
         goto r5
 
 
 print_least:
-        r7 := r6 mod 10
-        r6 := r6 / 10
-        output r7 + 48          # add offset to match ascii 0-9
-        if (r6 == 0) goto finish
+        r4 := r3 mod 10 using r1, r5
+        r3 := r3 / 10
+        r4 := r4 + '0'          # add offset to match ascii 0-9
+        output r4
+        if (r3 == 0) goto finish
         goto print_least
 
 print_sign:
         output '-'
-        r6 := - r6
+        r3 := - r3
         goto print_least
 

@@ -1,18 +1,27 @@
-.section init
-        r6 := 0
+## calc40.ums
+
+        .temps r6, r7
+        .section init
 
 # fill jumptable here
+        push r3 on stack r2
+        r3 := jumptable + 255
 fill_unknown_char:
-        m[r0][jumptable + r6] := unknown_char
-        r6 := r6 + 1
-        if (r6 <=s 255) goto fill_unknown_char
-        r6 := '0'
+        m[r0][r3] := unknown_char
+        r3 := r3 - 1
+
+        if (r3 >=s jumptable) goto fill_unknown_char using r5
+
+        r3 := jumptable + '9'
 fill_digit_ops:
-        m[r0][jumptable + r6] := push_digit
-        r6 := r6 + 1
-        if (r6 <=s '9') goto fill_digit_ops
+        m[r0][r3] := push_digit
+        r3 := r3 - 1
+
+        if (r3 >=s '0') goto fill_digit_ops using r5
+        pop r3 off stack r2
+
 # fill other ops
-        m[r0][jumptable + ' '] := waiting
+        m[r0][jumptable + ' '] := waiting_loop
         m[r0][jumptable + '\n'] := new_line
         m[r0][jumptable + '+'] := add_op
         m[r0][jumptable + '-'] := minus_op
@@ -28,12 +37,11 @@ fill_digit_ops:
         m[r0][jumptable + 'z'] := reset_all
 
 
-
-.section text
+        .section text
 
 main:
-        push r1 on stack r2     # save return address
-        goto waiting linking r1 # should push the program_ends to stack
+        push r1 on stack r2             # save return address
+        goto waiting linking r1         # should push the program_ends to stack
 program_ends:   # used as a flag to mark some space near the end of stack. TODO: validate this
         pop r5 off stack r2             # get return address back
         goto r5                         # go back to 'halt' in callmain
@@ -43,29 +51,38 @@ program_ends:   # used as a flag to mark some space near the end of stack. TODO:
 waiting:
         push r1 on stack r2
 waiting_loop:
-        r6 := input()
-        if (r6 != 0xFFFFFFFF) m[r0][jumptable + r6] # if not EOF, dispatch to operation
+        r1 := input()
+        if (r1 == 0xFFFFFFFF) goto waiting_eof using r5
+        r5 := r1 + jumptable
+        goto m[r0][r5] # if not EOF, dispatch to operation --- TODO: adapt it to recommended linking r1 convention?
+
+waiting_eof:
         # if EOF, end program
         # need to clean stack before leaving program
         goto reset_all linking r1
         pop r5 off stack r2
         goto r5                         # go back to program_ends
 
+
+
 ## parse one line of command. if digit comes, multiply previous digit then concat current one
 entering:
-        r6 := input()
-        if (m[r0][jumptable + r6] == push_digit) goto concat_digits
-        goto m[r0][jumptable + r6]
+        r1 := input()
+
+        r5 := r1 + jumptable            
+        r6 := m[r0][r5]
+        if (r6 == push_digit) goto concat_digits using r5
         goto waiting_loop
 
 ## handle consequent digit input
 concat_digits:
-        pop r7 off stack r2
-        r7 := r7 * 10
-        r6 := r6 + r7                   # r6 reduced to numeric later below
+        r5 := m[r0][r2]
+        r5 := r5 * 10
+        r1 := r1 + r5
+        pop stack r2                    # pop old last digit off, push new one below
 push_digit:
-        r6 := r6 - '0'
-        push r6 on stack r2
+        r1 := r1 - '0'
+        push r1 on stack r2
         goto entering
 
 ## print a new line, then go print stack and return to waiting_loop
@@ -73,88 +90,179 @@ new_line:
         output '\n'
         goto print_stack
 
+
+
+## My version does not use r1 return address here for these branches, just goto waiting_loop manually
+
+add_op:
+        r5 := m[r0][r2]
+        if (r5 == program_ends) goto stack_underflow_two using r1
+        r5 := m[r0][r2 + 1]
+        if (r5 == program_ends) goto stack_underflow_two using r1
+        r5 := m[r0][r2 + 1] + m[r0][r2]
+        pop stack r2
+        pop stack r2
+        push r5 on stack r2
+        goto waiting_loop
+
+minus_op:
+        r5 := m[r0][r2]
+        if (r5 == program_ends) goto stack_underflow_two using r1
+        r5 := m[r0][r2 + 1]
+        if (r5 == program_ends) goto stack_underflow_two using r1
+        r5 := m[r0][r2 + 1] - m[r0][r2] using r1
+        pop stack r2
+        pop stack r2
+        push r5 on stack r2
+        goto waiting_loop
+
+mult_op:
+        r5 := m[r0][r2]
+        if (r5 == program_ends) goto stack_underflow_two using r1
+        r5 := m[r0][r2 + 1]
+        if (r5 == program_ends) goto stack_underflow_two using r1
+        r5 := m[r0][r2 + 1] * m[r0][r2]
+        pop stack r2
+        pop stack r2
+        push r5 on stack r2
+        goto waiting_loop
+
+div_op:
+        r5 := m[r0][r2]
+        if (r5 == program_ends) goto stack_underflow_two using r1
+        r5 := m[r0][r2 + 1]
+        if (r5 == program_ends) goto stack_underflow_two using r1
+        if (m[r0][r2] == 0) goto division_by_zero using r1, r5
+        r5 := m[r0][r2 + 1] / m[r0][r2]
+        pop stack r2
+        pop stack r2
+        push r5 on stack r2
+        goto waiting_loop
+
+or_op:
+        r5 := m[r0][r2]
+        if (r5 == program_ends) goto stack_underflow_two using r1
+        r5 := m[r0][r2 + 1]
+        if (r5 == program_ends) goto stack_underflow_two using r1
+        r5 := m[r0][r2 + 1] | m[r0][r2] using r1
+        pop stack r2
+        pop stack r2
+        push r5 on stack r2
+        goto waiting_loop
+
+and_op:
+        r5 := m[r0][r2]
+        if (r5 == program_ends) goto stack_underflow_two using r1
+        r5 := m[r0][r2 + 1]
+        if (r5 == program_ends) goto stack_underflow_two using r1
+        r5 := m[r0][r2 + 1] & m[r0][r2]
+        pop stack r2
+        pop stack r2
+        push r5 on stack r2
+        goto waiting_loop
+
+
+
 ## change sign of the top item and push it back. 
 change_sign:
-        pop r6 off stack r2
-        r6 := - r6
-        push r6 on stack r2
+        r5 := m[r0][r2 + 1]
+        if (r5 == program_ends) goto stack_underflow_one using r1
+        r5 := - r5
+        pop stack r2
+        push r5 on stack r2
         goto waiting_loop
 
 ## filp bits of the top item and push it back
 filp_bits:
-        pop r6 off stack r2
-        r6 := ~ r6
-        push r6 on stack r2
+        r5 := m[r0][r2]
+        if (r5 == program_ends) goto stack_underflow_one using r1
+        r5 := ~ r5
+        pop stack r2
+        push r5 on stack r2
         goto waiting_loop
 
 ## swap top two items
 swap_two:
-        push r3 on stack r2
-        r3 := '2'               # reserve for exception
-        r6 := m[r0][r2 + 1]
-        if (r6 == program_ends) goto stack_underflow
-        r7 := m[r0][r2 + 2]
-        if (r7 == program_ends) goto stack_underflow
-        m[r0][r2 + 2] := r6
-        m[r0][r2 + 1] := r7
-        pop r3 off stack r2
+        r5 := m[r0][r2]
+        if (r5 == program_ends) goto stack_underflow_two using r1
+        r5 := m[r0][r2 + 1]
+        if (r5 == program_ends) goto stack_underflow_two using r1
+        r5 := m[r0][r2]
+        m[r0][r2] := m[r0][r2 + 1]
+        m[r0][r2 + 1] := r5
         goto waiting_loop
 
 ## duplicate top item
 dup_top:
-        push r3 on stack r2
-        r3 := '1'               # reserve for exception
-        r6 := m[r0][r2 + 1]
-        if (r6 == program_ends) goto stack_underflow
-        pop r3 off stack r2     # remove it so duplicate can be placed
-        push r6 on stack r2
+        r5 := m[r0][r2]
+        if (r5 == program_ends) goto stack_underflow_one using r1
+        push r5 on stack r2
         goto waiting_loop
 
 ## pop a item off stack
 pop_top:
-        push r3 on stack r2
-        r3 := '1'
-        r6 := m[r0][r2 + 1]
-        if (r6 == program_ends) goto stack_underflow
-        pop r3 off stack r2     # recover
-        pop stack r2            # pop it off
+        r5 := m[r0][r2]
+        if (r5 == program_ends) goto stack_underflow_one using r1
+        pop stack r2
         goto waiting_loop
 
 ## remove all values in stack. need to linking r1 to call this function
+# assume r1 hold the return address from caller
 reset_all:
-        r7 := r1                        # not push to stack, just use r7 to save return address here (for now)
-        if (r2 == program_ends) goto r7
+        r5 := m[r0][r2]
+        if (r5 == program_ends) goto r1 using r5
         pop stack r2
         goto reset_all
 
+
+
+## print the whole stack after a line is read, triggered by new line character
 print_stack:
-        push r3 on stack r2     # use a non-volatile here, for temps messed in printd
+        push r3 on stack r2
+        push r4 on stack r2
         r3 := r2 + 1
 print_stack_loop:       ## TODO: check if this is okay
-        if (r3 != program_ends) goto printd m[r0][r3] linking r1
+        r4 := m[r0][r3]
+        if (r4 == program_ends) goto done_print using r5
+        push r4 on stack r2
+        goto printd linking r1
+        pop stack r2
         r3 := r3 + 1
         goto print_stack_loop
+done_print:
         pop r3 off stack r2
+        pop r4 off stack r2
         goto waiting_loop
 
 
-
+## called right after r5 reads input
 unknown_char:
-        output "Unknown character "
-        output r6
+        output "Unknown character \'" # can this print single quotes?
+        output r5
+        output '\''
         output '\n'
         goto waiting_loop
 
 
   
-stack_underflow:
-        output "Stack underflow---expected at least "
-        output r3       # r3 store number of required elements (for now)
-        output " elements"
-        output '\n'
+stack_underflow_two:
+        output "Stack underflow---expected at least 2 elements\n"
         goto waiting_loop
 
-.section rodata
+stack_underflow_one:
+        output "Stack underflow---expected at least 1 element\n"
+        goto waiting_loop
+
+division_by_zero:
+        output "Division by zero\n"
+        goto waiting_loop
+
+
+
+
+
+
+        .section rodata
 .space 256
 jumptable:      ## TODO: check if this is correct
 
