@@ -3,13 +3,14 @@
 # creates space of 10,000 um words for stack
         .section init
         .zero r0
-        r2 := endstack
 
 
 # r2 := endstack
 
         .section data
-        .space 10000
+        .space 1000
 endstack:
-        .space 20000
+        .space 1000
 end_vstack:
+        .section init
+        r2 := endstack

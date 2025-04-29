@@ -13,8 +13,8 @@ printd:
         push r4 on stack r2
         r3 := m[r0][r2 + 3]     # assume parameter is pushed to stack by caller
         output ">>> "
-        if (r3 <s 0) goto print_sign using r1   # check negetivity first
-        goto print_least
+        if (r3 <s 0) goto handle_sign using r1   # check negetivity first
+        goto find_div_one
 
 finish:
         output '\n'
@@ -23,17 +23,32 @@ finish:
         pop r5 off stack r2           # get r1 return address back then exit
         goto r5
 
-
-print_least:
-        r4 := r3 mod 10 using r1, r5
-        r3 := r3 / 10
-        r4 := r4 + '0'          # add offset to match ascii 0-9
-        output r4
-        if (r3 == 0) goto finish
-        goto print_least
-
-print_sign:
-        output '-'
+handle_sign:
         r3 := - r3
-        goto print_least
+        if (r3 <s 0) goto print_min using r1
+        output '-'
+        goto find_div_one
 
+
+print_loop:
+        r4 := r4 / 10
+        if (r4 == 0) goto finish
+        r1 := r3 / r4
+        output r1 + '0'
+        r3 := r3 mod r4 using r1, r5
+        goto print_loop
+
+
+
+find_div_one:
+        r4 := 10
+find_loop:
+        r1 := r3 / r4
+        if (r1 == 0) goto print_loop
+        r4 := r4 * 10
+        goto find_loop
+
+
+print_min:
+        output "-2147483648"
+        goto finish
