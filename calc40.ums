@@ -46,7 +46,7 @@ waiting_loop:
         r6 := input()
         if (r6 != 0xFFFFFFFF) m[r0][jumptable + r6] # if not EOF, dispatch to operation
         # if EOF, end program
-        # need to clean stack here
+        # need to clean stack before leaving program
         goto reset_all linking r1
         pop r5 off stack r2
         goto r5                         # go back to program_ends
@@ -71,24 +71,61 @@ push_digit:
 ## print a new line, then go print stack and return to waiting_loop
 new_line:
         output '\n'
-        goto print_stack linking r1
+        goto print_stack
+
+## change sign of the top item and push it back. 
+change_sign:
+        pop r6 off stack r2
+        r6 := - r6
+        push r6 on stack r2
         goto waiting_loop
 
+## filp bits of the top item and push it back
+filp_bits:
+        pop r6 off stack r2
+        r6 := ~ r6
+        push r6 on stack r2
+        goto waiting_loop
 
+## swap top two items
+swap_two:
+        push r3 on stack r2
+        r3 := '2'               # reserve for exception
+        r6 := m[r0][r2 + 1]
+        if (r6 == program_ends) goto stack_underflow
+        r7 := m[r0][r2 + 2]
+        if (r7 == program_ends) goto stack_underflow
+        m[r0][r2 + 2] := r6
+        m[r0][r2 + 1] := r7
+        pop r3 off stack r2
+        goto waiting_loop
 
+## duplicate top item
+dup_top:
+        push r3 on stack r2
+        r3 := '1'               # reserve for exception
+        r6 := m[r0][r2 + 1]
+        if (r6 == program_ends) goto stack_underflow
+        pop r3 off stack r2     # remove it so duplicate can be placed
+        push r6 on stack r2
+        goto waiting_loop
 
-# need to linking r1 to call this function
+## pop a item off stack
+pop_top:
+        push r3 on stack r2
+        r3 := '1'
+        r6 := m[r0][r2 + 1]
+        if (r6 == program_ends) goto stack_underflow
+        pop r3 off stack r2     # recover
+        pop stack r2            # pop it off
+        goto waiting_loop
+
+## remove all values in stack. need to linking r1 to call this function
 reset_all:
         r7 := r1                        # not push to stack, just use r7 to save return address here (for now)
         if (r2 == program_ends) goto r7
         pop stack r2
         goto reset_all
-
-unknown_char:
-        output "Unknown character "
-        output r6
-        output '\n'
-        goto print_stack
 
 print_stack:
         push r3 on stack r2     # use a non-volatile here, for temps messed in printd
@@ -100,6 +137,22 @@ print_stack_loop:       ## TODO: check if this is okay
         pop r3 off stack r2
         goto waiting_loop
 
+
+
+unknown_char:
+        output "Unknown character "
+        output r6
+        output '\n'
+        goto waiting_loop
+
+
+  
+stack_underflow:
+        output "Stack underflow---expected at least "
+        output r3       # r3 store number of required elements (for now)
+        output " elements"
+        output '\n'
+        goto waiting_loop
 
 .section rodata
 .space 256
