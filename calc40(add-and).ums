@@ -1,0 +1,145 @@
+.section init
+        r6 := 0
+
+# fill jumptable here
+fill_unknown_char:
+        m[r0][jumptable + r6] := unknown_char
+        r6 := r6 + 1
+        if (r6 <=s 255) goto fill_unknown_char
+        r6 := '0'
+fill_digit_ops:
+        m[r0][jumptable + r6] := push_digit
+        r6 := r6 + 1
+        if (r6 <=s '9') goto fill_digit_ops
+# fill other ops
+        m[r0][jumptable + ' '] := waiting
+        m[r0][jumptable + '\n'] := new_line
+        m[r0][jumptable + '+'] := add_op
+        m[r0][jumptable + '-'] := minus_op
+        m[r0][jumptable + '*'] := mult_op
+        m[r0][jumptable + '/'] := div_op
+        m[r0][jumptable + '|'] := or_op
+        m[r0][jumptable + '&'] := and_op
+        m[r0][jumptable + 'c'] := change_sign
+        m[r0][jumptable + '~'] := filp_bits
+        m[r0][jumptable + 's'] := swap_two
+        m[r0][jumptable + 'd'] := dup_top
+        m[r0][jumptable + 'p'] := pop_top
+        m[r0][jumptable + 'z'] := reset_all
+
+
+
+.section text
+
+main:
+        push r1 on stack r2     # save return address
+        goto waiting linking r1 # should push the program_ends to stack
+program_ends:   # used as a flag to mark some space near the end of stack. TODO: validate this
+        pop r5 off stack r2             # get return address back
+        goto r5                         # go back to 'halt' in callmain
+
+
+## waiting, receive command then dispatch
+waiting:
+        push r1 on stack r2
+waiting_loop:
+        r6 := input()
+        if (r6 != 0xFFFFFFFF) m[r0][jumptable + r6] # if not EOF, dispatch to operation
+        # if EOF, end program
+        # need to clean stack here
+        goto reset_all linking r1
+        pop r5 off stack r2
+        goto r5                         # go back to program_ends
+
+## parse one line of command. if digit comes, multiply previous digit then concat current one
+entering:
+        r6 := input()
+        if (m[r0][jumptable + r6] == push_digit) goto concat_digits
+        goto m[r0][jumptable + r6]
+        goto waiting_loop
+
+## handle consequent digit input
+concat_digits:
+        pop r7 off stack r2
+        r7 := r7 * 10
+        r6 := r6 + r7                   # r6 reduced to numeric later below
+push_digit:
+        r6 := r6 - '0'
+        push r6 on stack r2
+        goto entering
+
+## print a new line, then go print stack and return to waiting_loop
+new_line:
+        output '\n'
+        goto print_stack linking r1
+        goto waiting_loop
+
+
+
+
+# need to linking r1 to call this function
+reset_all:
+        r7 := r1                        # not push to stack, just use r7 to save return address here (for now)
+        if (r2 == program_ends) goto r7
+        pop stack r2
+        goto reset_all
+
+unknown_char:
+        output "Unknown character "
+        output r6
+        output '\n'
+        goto print_stack
+
+print_stack:
+        push r3 on stack r2     # use a non-volatile here, for temps messed in printd
+        r3 := r2 + 1
+print_stack_loop:       ## TODO: check if this is okay
+        if (r3 != program_ends) goto printd m[r0][r3] linking r1
+        r3 := r3 + 1
+        goto print_stack_loop
+        pop r3 off stack r2
+        goto waiting_loop
+
+
+add_op:
+        push r1 on stack r2
+        r1 := m[r0][r2+1] + m[r0][r2+2]
+        pop r5 off stack r2
+        goto r5
+
+minus_op:
+        push r1 on stack r2
+        r1 := m[r0][r2+1] - m[r0][r2+2]
+        pop r5 off stack r2
+        goto r5
+
+mult_op:
+        push r1 on stack r2
+        r1 := m[r0][r2+1] * m[r0][r2+2]
+        pop r5 off stack r2
+        goto r5
+
+div_op: # TODO not sure if this is right, if denominator is 0, dont change stack
+        r6 := m[r0][r2+1]
+        if (r6 == 0) goto r1
+        push r1 on stack r2
+        r1 := m[r0][r2+1] / m[r0][r2+2]
+        pop r5 off stack r2
+        goto r5
+
+or_op:
+        push r1 on stack r2
+        r1 := m[r0][r2+1] | m[r0][r2+2]
+        pop r5 off stack r2
+        goto r5
+
+and_op:
+        push r1 on stack r2
+        r1 := m[r0][r2+1] & m[r0][r2+2]
+        pop r5 off stack r2
+        goto r5
+
+.section rodata
+.space 256
+jumptable:      ## TODO: check if this is correct
+
