@@ -39,25 +39,26 @@ program_ends:   # used as a flag to mark some space near the end of stack. TODO:
         goto r5                         # go back to 'halt' in callmain
 
 
-# waiting, receive then dispatch
+## waiting, receive command then dispatch
 waiting:
         push r1 on stack r2
+waiting_loop:
         r6 := input()
-        if (r6 == 0xFFFFFFFF) goto waiting_ends # if EOF, end program
-        goto m[r0][jumptable + r6]      # dispatch directly with jumptable
-waiting_ends:
+        if (r6 != 0xFFFFFFFF) m[r0][jumptable + r6] # if not EOF, dispatch to operation
+        # if EOF, end program
         # need to clean stack here
         goto reset_all linking r1
         pop r5 off stack r2
         goto r5                         # go back to program_ends
 
-# if digit comes, multiply previous digit then concat current one
+## parse one line of command. if digit comes, multiply previous digit then concat current one
 entering:
         r6 := input()
         if (m[r0][jumptable + r6] == push_digit) goto concat_digits
         goto m[r0][jumptable + r6]
+        goto waiting_loop
 
-
+## handle consequent digit input
 concat_digits:
         pop r7 off stack r2
         r7 := r7 * 10
@@ -67,8 +68,11 @@ push_digit:
         push r6 on stack r2
         goto entering
 
-
-
+## print a new line, then go print stack and return to waiting_loop
+new_line:
+        output '\n'
+        goto print_stack linking r1
+        goto waiting_loop
 
 
 
@@ -87,14 +91,14 @@ unknown_char:
         goto print_stack
 
 print_stack:
-        push r3 on stack r2     # use a non-volatile here, or temps messed in printd
+        push r3 on stack r2     # use a non-volatile here, for temps messed in printd
         r3 := r2 + 1
 print_stack_loop:       ## TODO: check if this is okay
         if (r3 != program_ends) goto printd m[r0][r3] linking r1
         r3 := r3 + 1
         goto print_stack_loop
         pop r3 off stack r2
-        goto waiting
+        goto waiting_loop
 
 
 .section rodata
