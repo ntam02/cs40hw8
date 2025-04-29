@@ -3,6 +3,7 @@
 # halt program after main is done 
 
         .section init
+        r0 := 0 
         .temps r6, r7
         goto main linking r1
         halt

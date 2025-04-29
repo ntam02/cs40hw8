@@ -1,24 +1,27 @@
 ## calc40.ums
-
-        .temps r6, r7
         .section init
+        .temps r6, r7
+        .section rodata
+        .space 256
+jumptable:
 
+        .section init
 # fill jumptable here
-        push r3 on stack r2
-        r3 := jumptable + 255
+        r1 := jumptable + 255
 fill_unknown_char:
-        m[r0][r3] := unknown_char
-        r3 := r3 - 1
+        m[r0][r1] := unknown_char   
+        r1 := r1 - 1
 
-        if (r3 >=s jumptable) goto fill_unknown_char using r5
+        if (r1 >=s jumptable) goto fill_unknown_char using r5
 
-        r3 := jumptable + '9'
+        r1 := jumptable + '9'
+        push r4 on stack r2
+        r4 := jumptable + '0'
 fill_digit_ops:
-        m[r0][r3] := push_digit
-        r3 := r3 - 1
-
-        if (r3 >=s '0') goto fill_digit_ops using r5
-        pop r3 off stack r2
+        m[r0][r1] := push_digit
+        r1 := r1 - 1
+        if (r1 >=s '0') goto fill_digit_ops using r5
+        pop r4 off stack r2
 
 # fill other ops
         m[r0][jumptable + ' '] := waiting_loop
@@ -36,20 +39,23 @@ fill_digit_ops:
         m[r0][jumptable + 'p'] := pop_top
         m[r0][jumptable + 'z'] := reset_all
 
-
         .section text
+## let r3 be the pointer of vstack, as program invariant
 
 main:
+        push r3 on stack r2             # non-volatile r3 as vstack pointer
+        r3 := end_vstack
         push r1 on stack r2             # save return address
-        goto waiting linking r1         # should push the program_ends to stack
-program_ends:   # used as a flag to mark some space near the end of stack. TODO: validate this
+        goto waiting linking r1
+program_ends:
         pop r5 off stack r2             # get return address back
+        pop r3 off stack r2
         goto r5                         # go back to 'halt' in callmain
 
 
 ## waiting, receive command then dispatch
 waiting:
-        push r1 on stack r2
+        push r1 on stack r2             # save return address
 waiting_loop:
         r1 := input()
         if (r1 == 0xFFFFFFFF) goto waiting_eof using r5
@@ -60,7 +66,7 @@ waiting_eof:
         # if EOF, end program
         # need to clean stack before leaving program
         goto reset_all linking r1
-        pop r5 off stack r2
+        pop r5 off stack r2             # pop the return address pushed at the start of waiting
         goto r5                         # go back to program_ends
 
 
@@ -76,13 +82,13 @@ entering:
 
 ## handle consequent digit input
 concat_digits:
-        r5 := m[r0][r2]
-        r5 := r5 * 10
-        r1 := r1 + r5
-        pop stack r2                    # pop old last digit off, push new one below
+        r6 := m[r0][r3]
+        r6 := r6 * 10
+        r1 := r1 + r6
+        pop stack r3                    # pop old last digit off, push new one below
 push_digit:
         r1 := r1 - '0'
-        push r1 on stack r2
+        push r1 on stack r3
         goto entering
 
 ## print a new line, then go print stack and return to waiting_loop
@@ -95,143 +101,142 @@ new_line:
 ## My version does not use r1 return address here for these branches, just goto waiting_loop manually
 
 add_op:
-        r5 := m[r0][r2]
-        if (r5 == program_ends) goto stack_underflow_two using r1
-        r5 := m[r0][r2 + 1]
-        if (r5 == program_ends) goto stack_underflow_two using r1
-        r5 := m[r0][r2 + 1] + m[r0][r2]
-        pop stack r2
-        pop stack r2
-        push r5 on stack r2
+        r5 := r3
+        if (r5 == end_vstack) goto stack_underflow_two using r1
+        r5 := r3 + 1
+        if (r5 == end_vstack) goto stack_underflow_two using r1
+        r5 := m[r0][r3 + 1] + m[r0][r3]
+        pop stack r3
+        pop stack r3
+        push r5 on stack r3
         goto waiting_loop
 
 minus_op:
-        r5 := m[r0][r2]
-        if (r5 == program_ends) goto stack_underflow_two using r1
-        r5 := m[r0][r2 + 1]
-        if (r5 == program_ends) goto stack_underflow_two using r1
-        r5 := m[r0][r2 + 1] - m[r0][r2] using r1
-        pop stack r2
-        pop stack r2
-        push r5 on stack r2
+        r5 := r3
+        if (r5 == end_vstack) goto stack_underflow_two using r1
+        r5 := r3 + 1
+        if (r5 == end_vstack) goto stack_underflow_two using r1
+        r5 := m[r0][r3 + 1] - m[r0][r3] using r1
+        pop stack r3
+        pop stack r3
+        push r5 on stack r3
         goto waiting_loop
 
 mult_op:
-        r5 := m[r0][r2]
-        if (r5 == program_ends) goto stack_underflow_two using r1
-        r5 := m[r0][r2 + 1]
-        if (r5 == program_ends) goto stack_underflow_two using r1
-        r5 := m[r0][r2 + 1] * m[r0][r2]
-        pop stack r2
-        pop stack r2
-        push r5 on stack r2
+        r5 := r3
+        if (r5 == end_vstack) goto stack_underflow_two using r1
+        r5 := r3 + 1
+        if (r5 == end_vstack) goto stack_underflow_two using r1
+        r5 := m[r0][r3 + 1] * m[r0][r3]
+        pop stack r3
+        pop stack r3
+        push r5 on stack r3
         goto waiting_loop
 
 div_op:
-        r5 := m[r0][r2]
-        if (r5 == program_ends) goto stack_underflow_two using r1
-        r5 := m[r0][r2 + 1]
-        if (r5 == program_ends) goto stack_underflow_two using r1
-        if (m[r0][r2] == 0) goto division_by_zero using r1, r5
-        r5 := m[r0][r2 + 1] / m[r0][r2]
-        pop stack r2
-        pop stack r2
-        push r5 on stack r2
+        r5 := r3
+        if (r5 == end_vstack) goto stack_underflow_two using r1
+        r5 := r3 + 1
+        if (r5 == end_vstack) goto stack_underflow_two using r1
+        if (m[r0][r3] == 0) goto division_by_zero using r1, r5
+        r5 := m[r0][r3 + 1] / m[r0][r3]
+        pop stack r3
+        pop stack r3
+        push r5 on stack r3
         goto waiting_loop
 
 or_op:
-        r5 := m[r0][r2]
-        if (r5 == program_ends) goto stack_underflow_two using r1
-        r5 := m[r0][r2 + 1]
-        if (r5 == program_ends) goto stack_underflow_two using r1
-        r5 := m[r0][r2 + 1] | m[r0][r2] using r1
-        pop stack r2
-        pop stack r2
-        push r5 on stack r2
+        r5 := r3
+        if (r5 == end_vstack) goto stack_underflow_two using r1
+        r5 := r3 + 1
+        if (r5 == end_vstack) goto stack_underflow_two using r1
+        r5 := m[r0][r3 + 1] | m[r0][r3] using r1
+        pop stack r3
+        pop stack r3
+        push r5 on stack r3
         goto waiting_loop
 
 and_op:
-        r5 := m[r0][r2]
-        if (r5 == program_ends) goto stack_underflow_two using r1
-        r5 := m[r0][r2 + 1]
-        if (r5 == program_ends) goto stack_underflow_two using r1
-        r5 := m[r0][r2 + 1] & m[r0][r2]
-        pop stack r2
-        pop stack r2
-        push r5 on stack r2
+        r5 := r3
+        if (r5 == end_vstack) goto stack_underflow_two using r1
+        r5 := r3 + 1
+        if (r5 == end_vstack) goto stack_underflow_two using r1
+        r5 := m[r0][r3 + 1] & m[r0][r3]
+        pop stack r3
+        pop stack r3
+        push r5 on stack r3
         goto waiting_loop
 
 
 
 ## change sign of the top item and push it back. 
 change_sign:
-        r5 := m[r0][r2 + 1]
-        if (r5 == program_ends) goto stack_underflow_one using r1
-        r5 := - r5
-        pop stack r2
-        push r5 on stack r2
+        r5 := r3 + 1
+        if (r5 == end_vstack) goto stack_underflow_one using r1
+        r5 := - m[r0][r3 + 1]
+        pop stack r3
+        push r5 on stack r3
         goto waiting_loop
 
 ## filp bits of the top item and push it back
 filp_bits:
-        r5 := m[r0][r2]
-        if (r5 == program_ends) goto stack_underflow_one using r1
-        r5 := ~ r5
-        pop stack r2
-        push r5 on stack r2
+        r5 := r3
+        if (r5 == end_vstack) goto stack_underflow_one using r1
+        r5 := ~ m[r0][r3]
+        pop stack r3
+        push r5 on stack r3
         goto waiting_loop
 
 ## swap top two items
 swap_two:
-        r5 := m[r0][r2]
-        if (r5 == program_ends) goto stack_underflow_two using r1
-        r5 := m[r0][r2 + 1]
-        if (r5 == program_ends) goto stack_underflow_two using r1
-        r5 := m[r0][r2]
-        m[r0][r2] := m[r0][r2 + 1]
-        m[r0][r2 + 1] := r5
+        r5 := r3
+        if (r5 == end_vstack) goto stack_underflow_two using r1
+        r5 := r3 + 1
+        if (r5 == end_vstack) goto stack_underflow_two using r1
+        r5 := m[r0][r3]
+        m[r0][r3] := m[r0][r3 + 1]
+        m[r0][r3 + 1] := r5
         goto waiting_loop
 
 ## duplicate top item
 dup_top:
-        r5 := m[r0][r2]
-        if (r5 == program_ends) goto stack_underflow_one using r1
-        push r5 on stack r2
+        r5 := r3
+        if (r5 == end_vstack) goto stack_underflow_one using r1
+        r5 := m[r0][r3]
+        push r5 on stack r3
         goto waiting_loop
 
 ## pop a item off stack
 pop_top:
-        r5 := m[r0][r2]
-        if (r5 == program_ends) goto stack_underflow_one using r1
-        pop stack r2
+        r5 := r3
+        if (r5 == end_vstack) goto stack_underflow_one using r1
+        pop stack r3
         goto waiting_loop
 
 ## remove all values in stack. need to linking r1 to call this function
 # assume r1 hold the return address from caller
 reset_all:
-        r5 := m[r0][r2]
-        if (r5 == program_ends) goto r1 using r5
-        pop stack r2
+        if (r3 == end_vstack) goto r1 using r5
+        pop stack r3
         goto reset_all
 
 
 
 ## print the whole stack after a line is read, triggered by new line character
 print_stack:
-        push r3 on stack r2
         push r4 on stack r2
-        r3 := r2 + 1
-print_stack_loop:       ## TODO: check if this is okay
-        r4 := m[r0][r3]
-        if (r4 == program_ends) goto done_print using r5
-        push r4 on stack r2
+        r5 := r3
+print_stack_loop:
+        r4 := r5
+        if (r4 == end_vstack) goto done_print using r1
+        r4 := m[r0][r5]
+        push r4 on stack r2             # push r4 as parameter to call printd
         goto printd linking r1
-        pop stack r2
-        r3 := r3 + 1
+        pop stack r2                    # pop the parameter off
+        r5 := r5 + 1
         goto print_stack_loop
 done_print:
-        pop r3 off stack r2
-        pop r4 off stack r2
+        pop r4 off stack r2             # recover r4
         goto waiting_loop
 
 
@@ -262,7 +267,5 @@ division_by_zero:
 
 
 
-        .section rodata
-.space 256
-jumptable:      ## TODO: check if this is correct
+
 
