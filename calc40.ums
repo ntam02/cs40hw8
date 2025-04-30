@@ -1,12 +1,18 @@
-## calc40.ums
+###     calc40.ums
+###     Qihang Yang & Nicolas Tam
+###     Apr. 27 2025
+###     asmcoding
+
+
+
         .section init
         .temps r6, r7
 
+## fill jumptable here
+## All numbers dispatch to push_digit
+## All special signs dispatch their block
+## All the others dispatch to unknown_char
 
-
-        .section init
-
-# fill jumptable here
         r1 := jumptable + 255
 fill_unknown_char:
         m[r0][r1] := unknown_char   
@@ -23,9 +29,8 @@ fill_digit_ops:
         if (r1 >=s r4) goto fill_digit_ops using r5
         pop r4 off stack r2
 
-# fill other ops
         m[r0][jumptable + ' '] := waiting_loop
-        m[r0][jumptable + '\n'] := new_line
+        m[r0][jumptable + '\n'] := print_stack
         m[r0][jumptable + '+'] := add_op
         m[r0][jumptable + '-'] := minus_op
         m[r0][jumptable + '*'] := mult_op
@@ -43,8 +48,9 @@ fill_digit_ops:
 
 
         .section text
-## let r3 be the pointer of vstack, as program invariant
 
+## Invariant: r3 is the pointer of vstack, maintained across the main procedure
+## when r3 is used for other purpose, value restored by caller
 main:
         push r3 on stack r2             # non-volatile r3 as vstack pointer
         r3 := end_vstack
@@ -62,13 +68,13 @@ waiting:
 waiting_loop:
         r5 := input()
         if (r5 == 0xFFFFFFFF) goto waiting_eof using r1
-        push r4 on stack r2
-        r4 := r5 + jumptable
-        goto m[r0][r4] linking r1       # if not EOF, dispatch to operation
-        pop r4 off stack r2
+        r5 := r5 + jumptable
+waiting_back:
+        goto m[r0][r5] linking r1       # if not EOF, dispatch to operation
         goto waiting_loop
+
+# if EOF, end program
 waiting_eof:
-        # if EOF, end program
         # need to clean stack before leaving program
         goto reset_all linking r1
         pop r5 off stack r2             # pop the return address pushed at the start of waiting
@@ -77,38 +83,40 @@ waiting_eof:
 
 
 ## parse one line of command. if digit comes, multiply previous digit then concat current one
+
 entering:
         r5 := input()
         if (r5 == 0xFFFFFFFF) goto waiting_eof using r1
-        push r4 on stack r2
-        r4 := r5 + jumptable
-        r4 := m[r0][r4]
+        r5 := r5 + jumptable
+        push r4 on stack r2             # use r4 since no temps for ==
+        r4 := m[r0][r5]
         if (r4 == push_digit) goto concat_digits using r1
         pop r4 off stack r2
-        r5 := r5 + jumptable
-        goto m[r0][r5] linking r1
-        goto waiting_loop
+        goto waiting_back
 
 ## handle consequent digit input
 concat_digits:
-        pop r4 off stack r2
-        r6 := m[r0][r3]                 # previous number taken
-        r6 := r6 * 10
-        r5 := r5 + r6
-        pop stack r3                    # pop old last digit off, push new one below
-push_digit:
+        pop r4 off stack r2             # restore r4 from entering
+        push r4 on stack r2
+        r4 := m[r0][r3]                 # previous number is on stack
+        r4 := r4 * 10
+        r5 := r5 - jumptable
         r5 := r5 - '0'
+        r5 := r5 + r4
+        pop r4 off stack r2
+        pop stack r3                    # pop old last digit off, push new one below
+        push r5 on stack r3
+        goto entering
+## when entering push_digit, r1 holds return address, but not used when jump back
+push_digit:
+        r5 := r5 - jumptable            # recover input
+        r5 := r5 - '0'                  # strip ascii padding
         push r5 on stack r3
         goto entering
 
-## print a new line, then go print stack and return to waiting_loop
-new_line:
-        # output '\n'
-        goto print_stack
 
 
-
-## My version does not use r1 return address here for these branches, just goto waiting_loop manually
+### All calculator operations
 
 add_op:
         push r1 on stack r2
@@ -140,12 +148,20 @@ mult_op:
         push r1 on stack r2
         r5 := r3
         if (r5 == end_vstack) goto stack_underflow_two using r1
-        r5 := r3 + 1
+        r5 := r5 + 1
         if (r5 == end_vstack) goto stack_underflow_two using r1
-        r5 := m[r0][r3 + 1] * m[r0][r3]
+        push r4 on stack r2
+        push r3 on stack r2
+        r4 := m[r0][r5]
+        r5 := r5 - 1
+        r3 := m[r0][r5]
+
+        r1 := r4 * r3
+        pop r3 off stack r2
         pop stack r3
         pop stack r3
-        push r5 on stack r3
+        push r1 on stack r3
+        pop r4 off stack r2
         pop r5 off stack r2
         goto r5
 
@@ -153,15 +169,52 @@ div_op:
         push r1 on stack r2
         r5 := r3
         if (r5 == end_vstack) goto stack_underflow_two using r1
-        r5 := r3 + 1
+        r5 := r5 + 1
         if (r5 == end_vstack) goto stack_underflow_two using r1
-        if (m[r0][r3] == 0) goto division_by_zero using r1, r5
-        r5 := m[r0][r3 + 1] / m[r0][r3]
+        r5 := r5 - 1
+        r1 := m[r0][r5]
+        if (r1 == 0) goto division_by_zero
+        push r4 on stack r2
+        push r3 on stack r2
+        r4 := r1
+        r5 := r5 + 1
+        r3 := m[r0][r5]
+
+        # use r3 and r4 to store 2 value, r3 inner, r4 outer
+        if (r3 <s 0) goto div_neg_pos using r1
+        if (r4 <s 0) goto div_pos_neg using r1
+div_poses:      
+        # if both pos, normal div is fine
+        r5 := r3 / r4
+div_back:
+        pop r3 off stack r2     # recover vstack pt
         pop stack r3
         pop stack r3
-        push r5 on stack r3
+        push r5 on stack r3     # push outcome to vstack
+        pop r4 off stack r2
         pop r5 off stack r2
         goto r5
+
+
+## if one operand is neg, invert neg one and outcome
+div_neg_pos:    # assume r3 is neg
+        if (r4 <s 0) goto div_negs using r1
+        r3 := - r3
+        r5 := r3 / r4   # if the other is pos, just div, then neg outcome
+        r5 := - r5
+        goto div_back
+div_pos_neg:    # assume r4 is neg
+        if (r3 <s 0) goto div_negs using r1
+        r4 := -r4
+        r5 := r3 / r4   # if the other is pos, just div, then neg outcome
+        r5 := - r5
+        goto div_back
+## if both operands are neg, only invert operands
+div_negs:
+        r3 := - r3
+        r4 := - r4
+        r5 := r3 / r4
+        goto div_back
 
 or_op:
         push r1 on stack r2
@@ -194,24 +247,30 @@ and_op:
 ## change sign of the top item and push it back. 
 change_sign:
         push r1 on stack r2
-        r5 := r3
-        if (r5 == end_vstack) goto stack_underflow_one using r1
-        r5 := - m[r0][r3]
-        pop stack r3
+        if (r3 == end_vstack) goto stack_underflow_one using r1
+        pop r5 off stack r3
+        r5 := - r5
         push r5 on stack r3
         pop r5 off stack r2
         goto r5
+
+
 
 ## filp bits of the top item and push it back
 filp_bits:
         push r1 on stack r2
         r5 := r3
         if (r5 == end_vstack) goto stack_underflow_one using r1
-        r5 := ~ m[r0][r3]
+        r5 := m[r0][r3]
+
+        r5 := ~ r5
+        
         pop stack r3
         push r5 on stack r3
         pop r5 off stack r2
         goto r5
+
+############## 439  117  sdd *d~*dc704c ################
 
 ## swap top two items
 swap_two:
@@ -229,8 +288,7 @@ swap_two:
 ## duplicate top item
 dup_top:
         push r1 on stack r2
-        r5 := r3
-        if (r5 == end_vstack) goto stack_underflow_one using r1
+        if (r3 == end_vstack) goto stack_underflow_one using r1
         r5 := m[r0][r3]
         push r5 on stack r3
         pop r5 off stack r2
@@ -270,7 +328,7 @@ print_stack_loop:
         push r5 on stack r2             # save counter
         push r4 on stack r2             # push r4 as parameter to call printd
         goto printd linking r1
-        pop stack r2                    # pop the parameter off
+        pop stack r2                    # pop the parameter r4 off
         pop r5 off stack r2
         r5 := r5 + 1
         goto print_stack_loop
@@ -285,6 +343,7 @@ unknown_char:
         push r1 on stack r2
         output "Unknown character "
         output 39                       # single quote
+        r5 := r5 - jumptable
         output r5
         output 39
         output '\n'
