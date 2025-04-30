@@ -1,0 +1,182 @@
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+>>> -72803539
+>>> -8515
+>>> -8515
+>>> 65
+>>> 362
+>>> 536
+>>> 0
+>>> 1
+>>> 1
+>>> -1815
+>>> -909
+>>> -1868
+>>> -473
+>>> 4233
+>>> 102
+>>> -883
+>>> 1791027221
+>>> -281248
+>>> -83
+>>> -1
+>>> 431
+>>> 0
+>>> 0
+>>> 1
+>>> -717
+>>> -2091294704
+>>> 5513104
+>>> -253
+>>> 0
+>>> -83352
+>>> 184
+>>> 328
+>>> 407
+>>> 0
+>>> 1
+>>> 1
+>>> 0
+>>> 0
+>>> 0
+>>> 722
+>>> 2038544161
+>>> -1
+>>> 623241
+>>> 621917
+>>> -603200
+>>> 4
+>>> 7665
+>>> -993
+>>> 0
+>>> 0
+>>> -23058
+>>> 427
+>>> -395
+>>> -395
+>>> -789
+>>> 0
+>>> 0
+>>> 71072773
+>>> 71072774
+>>> -6059
+>>> 147915
+>>> 4562935
+>>> -97
+>>> -303
+>>> -905
+>>> -1
+>>> 0
+>>> 0
+>>> 0
+>>> -1632
+>>> -862
+>>> -440
+>>> 1699343188
+>>> 1699343188
+>>> -357824
+>>> -88
+>>> 0
+>>> 297
+>>> 0
+>>> 890
+>>> 890
+>>> 0
+>>> 0
+>>> 132
+>>> -17
+>>> 17
+>>> 996115568
+>>> 996115568
+>>> 915
+>>> 0
+>>> -817
+>>> -817
+>>> 71
+>>> -71461
+>>> 147
+>>> 1
+>>> 599
