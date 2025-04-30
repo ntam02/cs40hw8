@@ -1,5 +1,5 @@
 ###     calc40.ums
-###     Qihang Yang & Nicolas Tam
+###     Qihang Yang & Nicholas Tam
 ###     Apr. 27 2025
 ###     asmcoding
 
@@ -78,8 +78,9 @@ waiting_back:
 waiting_eof:
         # need to clean stack before leaving program
         goto reset_all linking r1
-        pop r5 off stack r2             # pop the return address pushed at the start of waiting
-        goto r5                         # go back to program_ends
+        pop r5 off stack r2             # pop the return address pushed 
+        goto r5                         # at the start of waiting
+                                        # go back to program_ends
 
 
 
@@ -106,8 +107,8 @@ concat_digits:
         r5 := r5 - '0'
         r5 := r5 + r4
         pop r4 off stack r2
-        pop stack r3                    # pop old last digit off, push new one below
-        push r5 on stack r3
+        pop stack r3                    # pop old last digit off,
+        push r5 on stack r3             # push new one below
         goto entering
 ## when entering a branch, r1 always holds return address
 ## but in push_digit case, it's not used. will jump back to waiting_loop
@@ -122,9 +123,12 @@ push_digit:
 
 ### All calculator operations
 
+## add the top two items
+## needs two numbers on the top of the stack to calculate the result
+## if successful will push a whole number to the stack
 add_op:
         push r1 on stack r2
-        r5 := r3
+        r5 := r3        #check that there are enough arguments
         if (r5 == end_vstack) goto stack_underflow_two using r1
         r5 := r3 + 1
         if (r5 == end_vstack) goto stack_underflow_two using r1
@@ -135,9 +139,12 @@ add_op:
         pop r5 off stack r2
         goto r5
 
+## subtract the top two items
+## needs two numbers on the top of the stack to calculate the result
+## if successful will push a whole number to the stack
 minus_op:
         push r1 on stack r2
-        r5 := r3
+        r5 := r3        #check that there are enough arguments
         if (r5 == end_vstack) goto stack_underflow_two using r1
         r5 := r3 + 1
         if (r5 == end_vstack) goto stack_underflow_two using r1
@@ -148,9 +155,12 @@ minus_op:
         pop r5 off stack r2
         goto r5
 
+## run a multiplication operation on the top two items
+## needs two numbers on the top of the stack to calculate the result
+## if successful will push a whole number to the stack
 mult_op:
         push r1 on stack r2
-        r5 := r3
+        r5 := r3        #check that there are enough arguments
         if (r5 == end_vstack) goto stack_underflow_two using r1
         r5 := r5 + 1
         if (r5 == end_vstack) goto stack_underflow_two using r1
@@ -161,9 +171,12 @@ mult_op:
         pop r5 off stack r2
         goto r5
 
+## run a division operation on the top two items
+## needs two numbers on the top of the stack to calculate the result
+## if successful will push a whole number to the stack
 div_op:
         push r1 on stack r2
-        r5 := r3
+        r5 := r3        #check that there are enough arguments
         if (r5 == end_vstack) goto stack_underflow_two using r1
         r5 := r5 + 1
         if (r5 == end_vstack) goto stack_underflow_two using r1
@@ -211,6 +224,9 @@ div_negs:
         r5 := r3 / r4
         goto div_back
 
+## do a bitwise or of the top two items
+## needs two numbers on the top of the stack to calculate the result
+## if successful will push a number to the stack
 or_op:
         push r1 on stack r2
         r5 := r3
@@ -224,6 +240,9 @@ or_op:
         pop r5 off stack r2
         goto r5
 
+## do a bitwise and on the top two items
+## needs two numbers on the top of the stack to calculate the result
+## if successful will push a number to the stack
 and_op:
         push r1 on stack r2
         r5 := r3
@@ -239,7 +258,8 @@ and_op:
 
 
 
-## change sign of the top item and push it back. 
+## change sign of the top item and push it back.
+## wants at least one item on the stack
 change_sign:
         push r1 on stack r2
         if (r3 == end_vstack) goto stack_underflow_one using r1
@@ -252,6 +272,7 @@ change_sign:
 
 
 ## filp bits of the top item and push it back
+## wants at least one item on the stack
 filp_bits:
         push r1 on stack r2
         r5 := r3
@@ -265,6 +286,7 @@ filp_bits:
 
 
 ## swap top two items
+## wants at least two items on the stack
 swap_two:
         push r1 on stack r2
         r5 := r3
@@ -278,6 +300,7 @@ swap_two:
         goto r5
 
 ## duplicate top item
+## wants at least one item on the stack
 dup_top:
         push r1 on stack r2
         if (r3 == end_vstack) goto stack_underflow_one using r1
@@ -361,12 +384,6 @@ division_by_zero:
         output "Division by zero\n"
         pop r5 off stack r2
         goto r5
-
-
-
-
-
-
 
 ## offset enough space to handle ascii chars
         .section rodata

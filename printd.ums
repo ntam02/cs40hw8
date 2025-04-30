@@ -1,3 +1,8 @@
+###     printd.ums
+###     Qihang Yang & Nicholas Tam
+###     Apr. 27 2025
+###     asmcoding
+
 ### printd.ums
 ## r6 and r7 are temp registers, clobbered by this function
 ## when function is called, r1 holds return address

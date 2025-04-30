@@ -1,5 +1,5 @@
 ### urt0.ums
-###     Qihang Yang & Nicolas Tam
+###     Qihang Yang & Nicholas Tam
 ###     Apr. 27 2025
 ###     asmcoding
 
@@ -9,10 +9,10 @@
         .zero r0
 
         .section data
-        .space 100000
+        .space 10000
 ## call stack, hold arguments, save non-volatile regs, etc.
 endstack:
-        .space 200000
+        .space 20000
 ## vstack hold all calculator values
 end_vstack:
         .section init

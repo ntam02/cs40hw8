@@ -1,0 +1,16 @@
+1 - Nicholas Tam(ntam02) and Qihang Yang(qyang05)
+2 - None
+3 - All of calc40 has been implemented
+4 - no departures from calling convention in spec
+5 - push digits on stack from least to most significant, then pop and print
+backwards.
+ it explicitly prints that number.
+6 - the value stack is a section with 10000 um word spaces
+set aside.
+7 - init - contains code to initialize the calculator.
+    text - contains code that holds the functionality of the calculator.
+    data - sets aside space for the stacks.
+    rodata - sets aside space for the 256 values of the jumptable.
+8 - about 3 hours spent analyzing the assignment.
+9 - about 3 hours writing assembly code.
+10 - about 4 hours debugging.
