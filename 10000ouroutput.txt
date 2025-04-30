@@ -19,3 +19,158 @@ Division by zero
 Division by zero
 Division by zero
 Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+Division by zero
+>>> -72803539
+>>> -8515
+>>> -8515
+>>> 65
+>>> 362
+>>> -39
+>>> 0
+>>> 1
+>>> 1
+>>> -1815
+>>> -909
+>>> -1868
+>>> -473
+>>> -17
+>>> 102
+>>> -883
+>>> 1748
+>>> -83
+>>> 68
+>>> 0
+>>> 0
+>>> 1
+>>> -717
+>>> -586193001
+>>> 5513104
+>>> -253
+>>> 0
+>>> -83352
+>>> 184
+>>> 328
+>>> 407
+>>> 0
+>>> -3
+>>> 1
+>>> 1
+>>> 0
+>>> 571406948
+>>> -1
+>>> 999424
+>>> -590848
+>>> -590800
+>>> 0
+>>> 2190
+>>> -993
+>>> 0
+>>> 0
+>>> -23058
+>>> 427
+>>> -395
+>>> -395
+>>> 2091
+>>> -789
+>>> 1
+>>> 8903
+>>> -141564
+>>> -6177
+>>> 67149
+>>> -132
+>>> 9381
+>>> -303
+>>> -905
+>>> -1
+>>> 4194303
+>>> 0
+>>> -862
+>>> 8307040
+>>> 476328412
+>>> 476328412
+>>> 476328412
+>>> 362
+>>> 51793
+>>> -358440
+>>> 617
+>>> -88
+>>> 0
+>>> 297
+>>> 16
+>>> 889
+>>> 0
+>>> 0
+>>> 0
+>>> -17
+>>> 17
+>>> 996115568
+>>> 996115568
+>>> 915
+>>> 0
+>>> -817
+>>> -817
+>>> 71
+>>> -71461
+>>> 147
+>>> 1
+>>> 599
