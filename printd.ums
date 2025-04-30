@@ -1,10 +1,12 @@
-## printd.ums
-# r6 and r7 are temp registers, clobbered by this function
-# r5 is volatile register, holds return address temporarily
-# r2 always holds stack pointer
-#
-# when function is called, r1 holds return address,
-# r1 will hold return value when program ends
+### printd.ums
+## r6 and r7 are temp registers, clobbered by this function
+## when function is called, r1 holds return address
+
+## r2 always holds call stack pointer
+## r3 holds value stack pointer, maintained by this function,
+## it saves sentinel and all digits in reverse order
+
+
         .temps r6, r7
         .section text
 printd:
@@ -18,18 +20,21 @@ printd:
 
 finish:
         output '\n'
-        # sentinel is popped already, no worry about this
+        ## sentinel is popped already, no worry about this
         pop r4 off stack r2
         pop r5 off stack r2           # get r1 return address back then exit
         goto r5
 
+
 handle_sign:
         r4 := - r4
+        ## if can't be inverted, it's min int edge case
+        ## handle seperately
         if (r4 <s 0) goto print_min using r1
         output '-'
         goto destruct_loop
 
-
+## pop digits in r3, use sentinel to guard original data
 print_loop:
         pop r5 off stack r3
         if (r5 == sentinel) goto finish using r1
@@ -38,7 +43,7 @@ print_loop:
         goto print_loop
 
 
-# push all digits from least to most to vstack
+## push all digits from least to most to vstack, guarded by sentinel
 destruct_loop:
         r1 := r4 mod 10
         push r1 on stack r3
@@ -46,10 +51,11 @@ destruct_loop:
         if (r4 == 0) goto print_loop
         goto destruct_loop
 
-
+## special case
 print_min:
         output "-2147483648"
         pop stack r3    # pop sentinel
         goto finish
 
+## make a sentinel to guard original r3
 sentinel:

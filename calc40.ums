@@ -51,6 +51,7 @@ fill_digit_ops:
 
 ## Invariant: r3 is the pointer of vstack, maintained across the main procedure
 ## when r3 is used for other purpose, value restored by caller
+
 main:
         push r3 on stack r2             # non-volatile r3 as vstack pointer
         r3 := end_vstack
@@ -82,7 +83,8 @@ waiting_eof:
 
 
 
-## parse one line of command. if digit comes, multiply previous digit then concat current one
+## parse command until space or '\n'.
+## if digit comes, multiply previous digit then concat current one
 
 entering:
         r5 := input()
@@ -107,7 +109,9 @@ concat_digits:
         pop stack r3                    # pop old last digit off, push new one below
         push r5 on stack r3
         goto entering
-## when entering push_digit, r1 holds return address, but not used when jump back
+## when entering a branch, r1 always holds return address
+## but in push_digit case, it's not used. will jump back to waiting_loop
+## manually
 push_digit:
         r5 := r5 - jumptable            # recover input
         r5 := r5 - '0'                  # strip ascii padding
@@ -150,18 +154,10 @@ mult_op:
         if (r5 == end_vstack) goto stack_underflow_two using r1
         r5 := r5 + 1
         if (r5 == end_vstack) goto stack_underflow_two using r1
-        push r4 on stack r2
-        push r3 on stack r2
-        r4 := m[r0][r5]
-        r5 := r5 - 1
-        r3 := m[r0][r5]
-
-        r1 := r4 * r3
-        pop r3 off stack r2
+        r1 := m[r0][r3] * m[r0][r5]
         pop stack r3
         pop stack r3
         push r1 on stack r3
-        pop r4 off stack r2
         pop r5 off stack r2
         goto r5
 
@@ -179,8 +175,8 @@ div_op:
         r4 := r1
         r5 := r5 + 1
         r3 := m[r0][r5]
-
-        # use r3 and r4 to store 2 value, r3 inner, r4 outer
+        ## use r3 and r4 to store 2 value, r3 inner, r4 outer
+        ## dispatch div case based on parity of operands
         if (r3 <s 0) goto div_neg_pos using r1
         if (r4 <s 0) goto div_pos_neg using r1
 div_poses:      
@@ -195,15 +191,14 @@ div_back:
         pop r5 off stack r2
         goto r5
 
-
-## if one operand is neg, invert neg one and outcome
-div_neg_pos:    # assume r3 is neg
+## if one operand is neg, invert the neg one and the outcome
+div_neg_pos:    # r3 is neg
         if (r4 <s 0) goto div_negs using r1
         r3 := - r3
         r5 := r3 / r4   # if the other is pos, just div, then neg outcome
         r5 := - r5
         goto div_back
-div_pos_neg:    # assume r4 is neg
+div_pos_neg:    # r4 is neg
         if (r3 <s 0) goto div_negs using r1
         r4 := -r4
         r5 := r3 / r4   # if the other is pos, just div, then neg outcome
@@ -262,15 +257,12 @@ filp_bits:
         r5 := r3
         if (r5 == end_vstack) goto stack_underflow_one using r1
         r5 := m[r0][r3]
-
         r5 := ~ r5
-        
         pop stack r3
         push r5 on stack r3
         pop r5 off stack r2
         goto r5
 
-############## 439  117  sdd *d~*dc704c ################
 
 ## swap top two items
 swap_two:
@@ -304,6 +296,7 @@ pop_top:
         goto r5
 
 ## remove all values in stack.
+## use end_vstack as sentinel to signal termination
 reset_all:
         push r1 on stack r2
 reset_loop:
@@ -317,9 +310,11 @@ reset_done:
 
 
 ## print the whole stack after a line is read, triggered by new line character
+## item pushed on callstack before enter printd
+## only 1 item is printed by printd each call
 print_stack:
         push r1 on stack r2
-        push r4 on stack r2
+        push r4 on stack r2             # save non-vol reg
         r5 := r3
 print_stack_loop:
         r4 := r5
@@ -328,7 +323,7 @@ print_stack_loop:
         push r5 on stack r2             # save counter
         push r4 on stack r2             # push r4 as parameter to call printd
         goto printd linking r1
-        pop stack r2                    # pop the parameter r4 off
+        pop stack r2                    # pop the parameter off
         pop r5 off stack r2
         r5 := r5 + 1
         goto print_stack_loop
@@ -343,7 +338,7 @@ unknown_char:
         push r1 on stack r2
         output "Unknown character "
         output 39                       # single quote
-        r5 := r5 - jumptable
+        r5 := r5 - jumptable            # recover
         output r5
         output 39
         output '\n'
@@ -351,7 +346,7 @@ unknown_char:
         goto r5
 
 
-  
+## edge case handler
 stack_underflow_two:
         output "Stack underflow---expected at least 2 elements\n"
         pop r5 off stack r2
@@ -373,7 +368,7 @@ division_by_zero:
 
 
 
-
+## offset enough space to handle ascii chars
         .section rodata
 jumptable:
         .space 256

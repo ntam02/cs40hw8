@@ -1,16 +1,19 @@
-## urt0.ums
+### urt0.ums
+###     Qihang Yang & Nicolas Tam
+###     Apr. 27 2025
+###     asmcoding
+
 # declares zero and temp registers
 # creates space of 10,000 um words for stack
         .section init
         .zero r0
 
-
-# r2 := endstack
-
         .section data
         .space 100000
+## call stack, hold arguments, save non-volatile regs, etc.
 endstack:
         .space 200000
+## vstack hold all calculator values
 end_vstack:
         .section init
         r2 := endstack
